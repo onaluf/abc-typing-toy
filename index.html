@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>ABC</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name = "viewport" content = "initial-scale = 1, user-scalable = no, width = device-width">
+    <meta name="apple-mobile-web-app-status-bar-style" content="white">
+    <meta name="theme-color" content="#FFF">
+    <link rel="manifest" href="manifest.json" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@100;700;900&display=swap" rel="stylesheet">
+
+    <style>
+      html,body {
+        background: #FFF;
+        color: hsl(290, 0%, 30%);
+        position: relative;
+        width: 100dvw;
+        height: 100dvh;
+        padding: 0;
+        margin: 0;
+        /* font-family: 'Helvetica Neu', sans-serif; */
+        font-family: 'Nunito', sans-serif;
+
+        overflow: hidden scroll;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      .text-target {
+        font-family: 'Nunito', sans-serif;
+        position: absolute;
+        width: 100dvw;
+        min-height: 100dvh;
+        text-align: center;
+        background: transparent;
+
+        font-size: 5em;
+        font-weight: bold;
+
+        border: none;
+        outline: none;
+        padding: 2rem;
+
+        /* text-transform: uppercase; */
+
+        display: flex;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+      }
+      .word {
+        word-break: break-all;
+        animation: 1s linear new-word, 1s linear enter-screen-long;;
+      }
+      .word:not(:last-child) {
+        margin-right: 1rem;
+      }
+      .text-target > .char {
+        animation:
+          300ms linear enter-screen-short,
+          1s linear enter-screen-long;
+      }
+      .clean {
+        position: sticky;
+        float: right;
+        top: 1rem;
+        right: 1rem;
+
+        background: rgb(201, 0, 60);
+        color: #FFF;
+        font-weight: bold;
+        font-size: 2rem;
+
+        width: 4rem;
+        line-height: 4rem;
+        height: 4rem;
+        border-radius: 2rem;
+        text-align: center;
+      }
+
+      @keyframes new-word {
+        0% {
+          font-variation-settings: "wght" 700;
+        }
+        10% {
+          font-variation-settings: "wght" 900;
+        }
+        50% {
+          font-variation-settings: "wght" 100;
+        }
+        100% {
+          font-variation-settings: "wght" 700;
+        }
+      }
+      @keyframes enter-screen-short {
+        from {
+          color: #d82167;
+          opacity: 0;
+          transform: scale(10);
+        }
+        to {
+          color: #d82167;
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes enter-screen-long {
+        0% {
+          color: hsl(290, 70%, 50%);
+        }
+        10% {
+          color: hsl(326, 70%, 50%);
+        }
+        20% {
+          color: hsl(2, 70%, 50%);
+        }
+        30% {
+          color: hsl(38, 70%, 50%);
+        }
+        40% {
+          color: hsl(74, 70%, 50%);
+        }
+        50% {
+          color: hsl(110, 70%, 50%);
+        }
+        60% {
+          color: hsl(146, 70%, 50%);
+        }
+        70% {
+          color: hsl(182, 70%, 50%);
+        }
+        80% {
+          color: hsl(218, 70%, 50%);
+        }
+        90% {
+          color: hsl(254, 50%, 40%);
+        }
+        100% {
+          color: hsl(290, 0%, 30%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="text-target"></div>
+    <div class="clean">X</div>
+    <script>
+      
+      // Speech
+      const synth = window.speechSynthesis || window.webkitSpeechSynthesis;
+      const voices = synth.getVoices();
+      
+      // DOM
+      const textTarget = document.querySelector('.text-target')
+      textTarget.innerHTML = localStorage.getItem('last-content');
+      
+      // Setting
+      const speeachDelay = 300;
+      let timeThrotle = 0;
+
+      // Utter text
+      const utterThis = (text) => {
+        return () => {
+          timeThrotle = 0;
+          let utterThis = new SpeechSynthesisUtterance(text);
+          synth.speak(utterThis);
+          console.info('saying', text);
+        }
+      };
+
+      // Add charactere to the text container
+      const appendText = (char) => {
+        const newChar = document.createElement('span');
+        newChar.classList.add('char');
+        newChar.textContent = char;
+
+        textTarget.appendChild(newChar);
+        localStorage.setItem('last-content', textTarget.innerHTML);
+      }
+
+      const makeLastWork = () => {
+        // Take all direct span child of the wrapper
+        const newWord = document.createElement('span');
+        newWord.classList.add('word');
+        let word = '';
+        
+        const floatingChars = textTarget.querySelectorAll(':scope > .char');
+        floatingChars.forEach((char) => {
+          newWord.appendChild(char);
+          word += char.textContent;
+        });
+        textTarget.appendChild(newWord);
+        
+        if (word) {
+          utterThis(word)();
+        }
+        localStorage.setItem('last-content', textTarget.innerHTML);
+      }
+
+      const removeLastChar = () => {
+        const floatingChars = textTarget.querySelector(':scope > :last-child');
+        if (floatingChars) {
+          if (floatingChars.classList.contains('char')) {
+            // if .char then remove
+            floatingChars.remove();
+          } else if (floatingChars.classList.contains('word')) {
+            const subChars = floatingChars.querySelectorAll(':scope > .char');
+            if (subChars.length <= 1) {
+              floatingChars.remove();
+            } else {
+              subChars[subChars.length - 1].remove();
+            }
+          }
+        }
+        localStorage.setItem('last-content', textTarget.innerHTML);
+      }
+
+      document.body.addEventListener('keydown', (e) => {
+        let keyValue = String.fromCharCode(e.keyCode);
+        
+        console.info('event', e, keyValue);
+
+        if (e.code === 'Space' || e.code === 'Enter') {
+          // Space
+          clearTimeout(timeThrotle);
+          timeThrotle = 0;
+          makeLastWork();
+        } else if (e.code === 'Backspace' || e.code === 'Delete') {
+          // Backspace
+          removeLastChar();
+
+        // } else if (keyValue.match(/(\p{Letter})/gu)) {
+        } else if (e.key.length === 1) {
+          // Current char is a letter
+          appendText(event.key);
+
+          if (timeThrotle) {
+            clearTimeout(timeThrotle);
+            ongoingText += event.key;
+            timeThrotle = setTimeout(utterThis(ongoingText), speeachDelay);
+          } else {
+            ongoingText = event.key;
+            timeThrotle = setTimeout(utterThis(ongoingText), speeachDelay);
+          }
+        }
+      });
+
+      const clean = document.querySelector('.clean');
+      clean.addEventListener('click', () => {
+        textTarget.innerHTML = '';
+        localStorage.setItem('last-content', '');
+      });
+    </script>
+  </body>
+</html>
